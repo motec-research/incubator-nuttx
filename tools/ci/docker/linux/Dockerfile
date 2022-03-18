@@ -60,8 +60,9 @@ RUN mkdir bloaty -p \
   && make install
 
 # Install Rust and targets supported from NuttX
-ENV CARGO_HOME=/tools/rust
-ENV RUSTUP_HOME=/tools/rust/rustup
+ENV RUST_HOME=/tools/rust
+ENV CARGO_HOME=$RUST_HOME/cargo
+ENV RUSTUP_HOME=$RUST_HOME/rustup
 RUN mkdir -p $CARGO_HOME \
   && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
   && $CARGO_HOME/bin/rustup target add thumbv6m-none-eabi \
@@ -83,7 +84,7 @@ WORKDIR /tools
 FROM nuttx-toolchain-base AS nuttx-toolchain-arm
 # Download the latest ARM GCC toolchain prebuilt by ARM
 RUN mkdir gcc-arm-none-eabi && \
-  curl -s -L  "https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux.tar.bz2?revision=108bd959-44bd-4619-9c19-26187abf5225&la=en&hash=E788CE92E5DFD64B2A8C246BBA91A249CB8E2D2D" \
+  curl -s -L  "https://developer.arm.com/-/media/Files/downloads/gnu-rm/10.3-2021.10/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2" \
   | tar -C gcc-arm-none-eabi --strip-components 1 -xj
 
 ###############################################################################
@@ -264,9 +265,9 @@ ENV PATH="/tools/bloaty/bin:$PATH"
 
 # Pull in the Rust toolchain including supported targets
 COPY --from=nuttx-tools /tools/rust/ /tools/rust/
-ENV CARGO_HOME=/tools/rust
+ENV CARGO_HOME=/tools/rust/cargo
 ENV RUSTUP_HOME=/tools/rust/rustup
-ENV PATH="/tools/rust/bin:$PATH"
+ENV PATH="/tools/rust/cargo/bin:$PATH"
 
 # ARM toolchain
 COPY --from=nuttx-toolchain-arm /tools/gcc-arm-none-eabi/ gcc-arm-none-eabi/

@@ -80,6 +80,18 @@
 # define CONFIG_ARCH_INTERRUPTSTACK 0
 #endif
 
+/* sparc requires at least a 4-byte stack alignment.  For floating point use,
+ * however, the stack must be aligned to 8-byte addresses.
+ */
+
+#define STACK_ALIGNMENT     8
+
+/* Stack alignment macros */
+
+#define STACK_ALIGN_MASK    (STACK_ALIGNMENT - 1)
+#define STACK_ALIGN_DOWN(a) ((a) & ~STACK_ALIGN_MASK)
+#define STACK_ALIGN_UP(a)   (((a) + STACK_ALIGN_MASK) & ~STACK_ALIGN_MASK)
+
 /* This is the value used to mark the stack for subsequent stack monitoring
  * logic.
  */
@@ -87,6 +99,13 @@
 #define STACK_COLOR    0xdeadbeef
 #define INTSTACK_COLOR 0xdeadbeef
 #define HEAP_COLOR     'h'
+
+#define getreg8(a)     (*(volatile uint8_t *)(a))
+#define putreg8(v,a)   (*(volatile uint8_t *)(a) = (v))
+#define getreg16(a)    (*(volatile uint16_t *)(a))
+#define putreg16(v,a)  (*(volatile uint16_t *)(a) = (v))
+#define getreg32(a)    (*(volatile uint32_t *)(a))
+#define putreg32(v,a)  (*(volatile uint32_t *)(a) = (v))
 
 /****************************************************************************
  * Public Types
@@ -163,22 +182,19 @@ extern uint32_t _bmxdupba_address;   /* BMX register setting */
  * functions prototyped in include/nuttx/arch.h.
  */
 
+/* Atomic modification of registers */
+
+void modifyreg8(unsigned int addr, uint8_t clearbits, uint8_t setbits);
+void modifyreg16(unsigned int addr, uint16_t clearbits, uint16_t setbits);
+void modifyreg32(unsigned int addr, uint32_t clearbits, uint32_t setbits);
+
 /* Context switching */
 
 void up_copystate(uint32_t *dest, uint32_t *src);
 
 /* Serial output */
 
-void up_puts(const char *str);
 void up_lowputs(const char *str);
-
-/* Defined in drivers/lowconsole.c */
-
-#ifdef CONFIG_DEV_LOWCONSOLE
-void lowconsole_init(void);
-#else
-# define lowconsole_init()
-#endif
 
 /* Debug */
 
@@ -206,7 +222,6 @@ void up_sigdeliver(void);
 
 /* IRQs */
 
-void up_irqinitialize(void);
 bool up_pending_irq(int irq);
 void up_clrpend_irq(int irq);
 
@@ -229,8 +244,6 @@ void up_addregion(void);
 void up_lowputc(char ch);
 void up_earlyserialinit(void);
 void up_serialinit(void);
-
-void rpmsg_serialinit(void);
 
 /* Network */
 

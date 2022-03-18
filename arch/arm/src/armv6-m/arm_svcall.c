@@ -29,12 +29,12 @@
 #include <string.h>
 #include <assert.h>
 #include <debug.h>
+#include <syscall.h>
 
 #include <arch/irq.h>
 #include <nuttx/sched.h>
 
 #include "signal/signal.h"
-#include "svcall.h"
 #include "exc_return.h"
 #include "arm_internal.h"
 
@@ -95,8 +95,9 @@ static void dispatch_syscall(void)
     " add sp, sp, #12\n"          /* Destroy the stack frame */
     " pop {r4, r5}\n"             /* Recover R4 and R5 */
     " mov r2, r0\n"               /* R2=Save return value in R2 */
-    " mov r0, #3\n"               /* R0=SYS_syscall_return */
-    " svc %0\n"::"i"(SYS_syscall) /* Return from the SYSCALL */
+    " mov r0, %0\n"               /* R0=SYS_syscall_return */
+    " svc %1\n"::"i"(SYS_syscall_return),
+                 "i"(SYS_syscall) /* Return from the SYSCALL */
   );
 }
 #endif
@@ -196,7 +197,8 @@ int arm_svcall(int irq, FAR void *context, FAR void *arg)
 
       /* R0=SYS_switch_context:  This a switch context command:
        *
-       *   void arm_switchcontext(uint32_t *saveregs, uint32_t *restoreregs);
+       *   void arm_switchcontext(uint32_t **saveregs,
+       *                          uint32_t *restoreregs);
        *
        * At this point, the following values are saved in context:
        *
@@ -213,7 +215,7 @@ int arm_svcall(int irq, FAR void *context, FAR void *arg)
       case SYS_switch_context:
         {
           DEBUGASSERT(regs[REG_R1] != 0 && regs[REG_R2] != 0);
-          memcpy((uint32_t *)regs[REG_R1], regs, XCPTCONTEXT_SIZE);
+          *(uint32_t **)regs[REG_R1] = regs;
           CURRENT_REGS = (uint32_t *)regs[REG_R2];
         }
         break;

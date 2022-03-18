@@ -311,6 +311,10 @@ struct tcp_conn_s
   /* Callback instance for TCP send() */
 
   FAR struct devif_callback_s *sndcb;
+
+#ifdef CONFIG_DEBUG_ASSERTIONS
+  int sndcb_alloc_cnt;    /* The callback allocation counter */
+#endif
 #endif
 
   /* accept() is called when the TCP logic has created a connection
@@ -825,20 +829,6 @@ void tcp_poll(FAR struct net_driver_s *dev, FAR struct tcp_conn_s *conn);
 
 void tcp_timer(FAR struct net_driver_s *dev, FAR struct tcp_conn_s *conn,
                int hsec);
-
-/****************************************************************************
- * Name: tcp_listen_initialize
- *
- * Description:
- *   Setup the listening data structures
- *
- * Assumptions:
- *   Called early in the initialization phase while the system is still
- *   single-threaded.
- *
- ****************************************************************************/
-
-void tcp_listen_initialize(void);
 
 /****************************************************************************
  * Name: tcp_findlistener
@@ -1641,6 +1631,22 @@ void tcp_wrbuffer_release(FAR struct tcp_wrbuffer_s *wrb);
 #ifdef CONFIG_NET_TCP_WRITE_BUFFERS
 int tcp_wrbuffer_test(void);
 #endif /* CONFIG_NET_TCP_WRITE_BUFFERS */
+
+/****************************************************************************
+ * Name: tcp_event_handler_dump
+ *
+ * Description:
+ *  Dump the TCP event handler related variables
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_DEBUG_FEATURES
+void tcp_event_handler_dump(FAR struct net_driver_s *dev,
+                            FAR void *pvconn,
+                            FAR void *pvpriv,
+                            uint16_t flags,
+                            FAR struct tcp_conn_s *conn);
+#endif
 
 /****************************************************************************
  * Name: tcp_wrbuffer_dump

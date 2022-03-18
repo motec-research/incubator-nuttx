@@ -31,10 +31,9 @@
 
 #include <nuttx/arch.h>
 #include <arch/irq.h>
+#include <arch/csr.h>
 
 #include "riscv_internal.h"
-#include "riscv_arch.h"
-
 #include "c906.h"
 
 /****************************************************************************
@@ -122,19 +121,18 @@ void up_irqinitialize(void)
 void up_disable_irq(int irq)
 {
   int extirq = 0;
-  uint64_t oldstat = 0;
 
   if (irq == RISCV_IRQ_MSOFT)
     {
       /* Read mstatus & clear machine software interrupt enable in mie */
 
-      asm volatile ("csrrc %0, mie, %1": "=r" (oldstat) : "r"(MIE_MSIE));
+      CLEAR_CSR(mie, MIE_MSIE);
     }
   else if (irq == RISCV_IRQ_MTIMER)
     {
       /* Read mstatus & clear machine timer interrupt enable in mie */
 
-      asm volatile ("csrrc %0, mie, %1": "=r" (oldstat) : "r"(MIE_MTIE));
+      CLEAR_CSR(mie, MIE_MTIE);
     }
   else if (irq >= C906_IRQ_PERI_START)
     {
@@ -165,19 +163,18 @@ void up_disable_irq(int irq)
 void up_enable_irq(int irq)
 {
   int extirq;
-  uint64_t oldstat;
 
   if (irq == RISCV_IRQ_MSOFT)
     {
       /* Read mstatus & set machine software interrupt enable in mie */
 
-      asm volatile ("csrrs %0, mie, %1": "=r" (oldstat) : "r"(MIE_MSIE));
+      SET_CSR(mie, MIE_MSIE);
     }
   else if (irq == RISCV_IRQ_MTIMER)
     {
       /* Read mstatus & set machine timer interrupt enable in mie */
 
-      asm volatile ("csrrs %0, mie, %1": "=r" (oldstat) : "r"(MIE_MTIE));
+      SET_CSR(mie, MIE_MTIE);
     }
   else if (irq >= C906_IRQ_PERI_START)
     {
@@ -205,7 +202,7 @@ void up_enable_irq(int irq)
  *
  ****************************************************************************/
 
-uint32_t riscv_get_newintctx(void)
+uintptr_t riscv_get_newintctx(void)
 {
   /* Set machine previous privilege mode to machine mode. Reegardless of
    * how NuttX is configured and of what kind of thread is being started.
@@ -215,10 +212,12 @@ uint32_t riscv_get_newintctx(void)
    * user code. Also set machine previous interrupt enable.
    */
 
+  uintptr_t mstatus = READ_CSR(mstatus);
+
 #ifdef CONFIG_ARCH_FPU
-  return (MSTATUS_FS_INIT | MSTATUS_MPPM | MSTATUS_MPIE);
+  return (mstatus | MSTATUS_FS_INIT | MSTATUS_MPPM | MSTATUS_MPIE);
 #else
-  return (MSTATUS_MPPM | MSTATUS_MPIE);
+  return (mstatus | MSTATUS_MPPM | MSTATUS_MPIE);
 #endif
 }
 
@@ -244,16 +243,16 @@ void riscv_ack_irq(int irq)
 
 irqstate_t up_irq_enable(void)
 {
-  uint64_t oldstat;
+  irqstate_t oldstat;
 
   /* Enable MEIE (machine external interrupt enable) */
 
   /* TODO: should move to up_enable_irq() */
 
-  asm volatile ("csrrs %0, mie, %1": "=r" (oldstat) : "r"(MIE_MEIE));
+  SET_CSR(mie, MIE_MEIE);
 
   /* Read mstatus & set machine interrupt enable (MIE) in mstatus */
 
-  asm volatile ("csrrs %0, mstatus, %1": "=r" (oldstat) : "r"(MSTATUS_MIE));
+  oldstat = READ_AND_SET_CSR(mstatus, MSTATUS_MIE);
   return oldstat;
 }

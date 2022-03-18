@@ -34,6 +34,8 @@
 #include <arch/board/board.h>
 
 #include <arch/irq.h>
+#include <arch/csr.h>
+#include <stdint.h>
 
 #include "riscv_internal.h"
 #include "hardware/esp32c3_interrupt.h"
@@ -140,13 +142,15 @@ void up_irqinitialize(void)
  *
  ****************************************************************************/
 
-uint32_t riscv_get_newintctx(void)
+uintptr_t riscv_get_newintctx(void)
 {
   /* Set machine previous privilege mode to machine mode.
    * Also set machine previous interrupt enable
    */
 
-  return (MSTATUS_MPPM | MSTATUS_MPIE);
+  uintptr_t mstatus = READ_CSR(mstatus);
+
+  return (mstatus | MSTATUS_MPPM | MSTATUS_MPIE);
 }
 
 /****************************************************************************
@@ -461,17 +465,10 @@ IRAM_ATTR uintptr_t *esp32c3_dispatch_irq(uintptr_t mcause, uintptr_t *regs)
 
 irqstate_t up_irq_enable(void)
 {
-  uint32_t flags;
+  irqstate_t flags;
 
   /* Read mstatus & set machine interrupt enable (MIE) in mstatus */
 
-  __asm__ __volatile__
-    (
-      "csrrs %0, mstatus, %1\n"
-      : "=r" (flags)
-      : "r"(MSTATUS_MIE)
-      : "memory"
-    );
-
+  flags = READ_AND_SET_CSR(mstatus, MSTATUS_MIE);
   return flags;
 }

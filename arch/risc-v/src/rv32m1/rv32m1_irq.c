@@ -32,10 +32,9 @@
 #include <nuttx/board.h>
 #include <arch/irq.h>
 #include <arch/board/board.h>
+#include <arch/csr.h>
 
 #include "riscv_internal.h"
-#include "riscv_arch.h"
-
 #include "rv32m1.h"
 #include "hardware/rv32m1_eu.h"
 
@@ -222,13 +221,15 @@ void up_enable_irq(int irq)
  *
  ****************************************************************************/
 
-uint32_t riscv_get_newintctx(void)
+uintptr_t riscv_get_newintctx(void)
 {
   /* Set machine previous privilege mode to machine mode.
    * Also set machine previous interrupt enable
    */
 
-  return (MSTATUS_MPPM | MSTATUS_MPIE);
+  uintptr_t mstatus = READ_CSR(mstatus);
+
+  return (mstatus | MSTATUS_MPPM | MSTATUS_MPIE);
 }
 
 /****************************************************************************
@@ -254,18 +255,18 @@ void riscv_ack_irq(int irq)
 
 irqstate_t up_irq_enable(void)
 {
-  uint32_t oldstat;
+  irqstate_t oldstat;
 
 #if 1
   /* Enable MEIE (machine external interrupt enable) */
 
   /* TODO: should move to up_enable_irq() */
 
-  asm volatile ("csrrs %0, mie, %1": "=r" (oldstat) : "r"(MIE_MEIE));
+  SET_CSR(mie, MIE_MEIE);
 #endif
 
   /* Read mstatus & set machine interrupt enable (MIE) in mstatus */
 
-  asm volatile ("csrrs %0, mstatus, %1": "=r" (oldstat) : "r"(MSTATUS_MIE));
+  oldstat = READ_AND_SET_CSR(mstatus, MSTATUS_MIE);
   return oldstat;
 }
