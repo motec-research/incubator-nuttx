@@ -13,15 +13,8 @@
 name: Docker-Linux
 
 on:
+  # Run builds for any push or PRs.
   push:
-    # Publish `master` as Docker `latest` image.
-    branches:
-      - master
-    paths:
-      - 'tools/ci/docker/linux/**'
-      - '.github/workflows/docker_linux.yml'
-
-  # Run builds for any PRs.
   pull_request:
     paths:
       - 'tools/ci/docker/linux/**'

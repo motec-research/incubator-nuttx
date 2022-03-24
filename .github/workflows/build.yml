@@ -14,15 +14,9 @@ name: Build
 
 on:
   pull_request:
-    paths-ignore:
-      - 'Documentation/**'
   push:
     paths-ignore:
       - 'Documentation/**'
-    branches:
-      - master
-      - 'releases/*'
-    tags:
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}

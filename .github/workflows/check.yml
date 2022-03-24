@@ -13,6 +13,7 @@
 name: Check
 
 on:
+  push:
   pull_request:
     paths-ignore:
       - 'Documentation/**'

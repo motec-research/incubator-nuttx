@@ -1,6 +1,8 @@
 name: Lint
 
-on: [pull_request]
+on:
+  push:
+  pull_request:
 
 concurrency:
   group: lint-${{ github.event.pull_request.number || github.ref }}
