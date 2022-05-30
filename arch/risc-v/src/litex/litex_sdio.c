@@ -954,16 +954,19 @@ static int litex_waitresponse(struct sdio_dev_s *dev, uint32_t cmd)
 
   if (ev & LITEX_EV_WRERROR)
     {
+      mcinfo("Write Error\n");
       return -EIO;
     }
 
   if (ev & LITEX_EV_TIMEOUT)
     {
+      mcinfo("Hardware Timeout\n");
       return -ETIMEDOUT;
     }
 
   if (ev & LITEX_EV_CRCERROR)
     {
+      mcinfo("CRC Error\n");
       return -EILSEQ;
     }
 
