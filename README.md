@@ -21,6 +21,38 @@ environments (such as fork()).
 
 For brevity, many parts of the documentation will refer to Apache NuttX as simply NuttX.
 
+## Testing branch for issue [11189](https://github.com/apache/nuttx/issues/11189)
+
+Get NuttX apps with the example application
+
+```
+git fetch https://github.com/motec-research/nuttx-apps.git
+git checkout issues/11189
+```
+
+### Building for esp32c3
+
+```
+./tools/configure.sh esp32c3-devkit:tickless 
+make -j
+make flash ESPTOOL_PORT=/dev/ttyUSBX
+```
+
+```
+./tools/configure.sh qemu-armv8a:nsh_smp_tickless
+make -j
+qemu-system-aarch64 \
+    -cpu cortex-a53 \
+    --smp 4  \
+    -nographic \
+    -machine virt,virtualization=on,gic-version=3 \
+    -net none \
+    -chardev stdio,id=con,mux=on \
+    -serial chardev:con  "\
+    -mon chardev=con,mode=readline \
+    -kernel nuttx
+```
+
 ## Getting Started
 First time on NuttX? Read the [Getting Started](https://nuttx.apache.org/docs/latest/quickstart/index.html) guide!
 If you don't have a board available, NuttX has its own simulator that you can run on terminal.
